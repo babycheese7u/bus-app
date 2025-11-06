@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>地図表示</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Google Maps API（APIキーを設定） -->
+  <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap" async defer></script>
+
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+    .control-buttons {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: white;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+    button {
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 計測用のスタート・ストップボタン -->
+  <div id="controls">
+    <button id="startBtn">スタート</button>
+    <button id="stopBtn" disabled>ストップ</button>
+  </div>
+  
+  <div id="map"></div>
+
+  <!-- 外部JSの読み込み -->
+  <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+</body>
+</html>

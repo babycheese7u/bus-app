@@ -1,0 +1,11 @@
+services:                     # 作成したいサービス
+  web:                        # 個々の名前は任意（わかりやすいサービス名）
+    build: .                  # Dockerfileよりビルドする場合、相対パスを記述
+    volumes:                  # ホスト側のフォルダをコンテナ内に即時反映（再ビルド不要）
+      - .:/app        # ホストbus-appの内容をコンテナappに同期（マウント）
+    environment:              # Dockerコンテナ内で使用される環境変数の設定
+      - FLASK_APP=app.py      # Flaskアプリファイル名
+      - FLASK_ENV=development # Flaskを開発モードで動作
+    ports:                    # ホストマシンとDockerコンテナ間でのネットワークポイントのマッピング
+      - "8080:8080"           # ホストマシンのポート番号:コンテナのポート番号
+    command: python app.py    # サービスコンテナ起動時に実行するコマンド

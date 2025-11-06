@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICカード乗降管理</title>
+</head>
+<body>
+    <h1>区間 <span id="section">{{ section }}</span></h1>
+
+    <!-- 乗降切り替えスイッチ -->
+    <label>
+        <input type="checkbox" id="modeSwitch">
+        降車モードに切り替える
+    </label>
+    <div id="status-label">現在のモード: <span id="mode">乗車</span></div>
+
+    <button onclick="fetchUID()">ICカード読み取り</button>
+    <button id="next-section">次の区間へ</button>
+
+    <p id="uid">読み取り待ち...</p>
+    <p id="result"></p>
+
+    <script>
+        const switchE1  = document.getElementById("modeSwitch");     // 切り替えスイッチ
+        const modeE1    = document.getElementById("mode");           // 現在のモード
+        const uidE1     = document.getElementById("uid");            // UID
+        const sectionE1 = document.getElementById("section");        // セクション
+        const resultE1  = document.getElementById("result");         // 結果
+
+        // スイッチの切り替えに応じて
+        // スイッチ（チェックボックス）がTrueなら”降車”,Falseなら”乗車”にmodeE1の内容を変更
+        switchE1.addEventListener("change", () => {
+            modeE1.textContent = switchE1.checked ? "降車" : "乗車";
+        })
+
+        // サーバーにリクエスト送信
+        async function fetchUID() {
+            resultE1.textContext = "読み取り中...";
+            const status = switchE1.checked ? "降車" : "乗車";
+
+            // HTTPレスポンス
+            const res = await fetch("/get_uid", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ status })
+            });
+            const data = await res.json();      // JSON形式に変換
+
+            uidE1.textContent = data.uid ?? "カードが読み取れません";
+            resultE1.textContent = data.uid ? `${data.status} として保存しました` : "読み取り失敗";
+        }
+
+        // 区間切り替えボタン
+        document.getElementById("next-section").addEventListener("click", () => {
+            fetch("/next_section", { method: "POST" })
+            .then(res => res.json())
+            .then(data => {
+                resultE1.textContent = data.message;
+                sectionE1.textContent = data.next_section;
+            });
+        });
+    </script>
+</body>
+</html>
