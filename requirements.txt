@@ -1,2 +1,4 @@
 Flask==3.0.3
-pyscard==1.9.9
+#pyscard @ https://files.pythonhosted.org/packages/42/65/4bbc350d89b70125b465216aa7f12690d5bf826b6dcf0e3541403b5f42c9/pyscard-2.0.5-cp312-cp312-win_amd64.whl
+firebase-admin==6.5.0
+python-dotenv==1.0.1
