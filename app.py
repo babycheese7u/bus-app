@@ -13,7 +13,7 @@ GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 app = Flask(__name__)
 
 # Firebase接続（アプリ起動時一度のみ）
-cred = credentials.Certificate("serviceAccountKey.json")    # 秘密鍵ファイルによる認証
+cred = credentials.Certificate("C:\\Users\\pcwvs\\firebase_keys\\bus-app-service-key.json")    # 秘密鍵ファイルによる認証
 firebase_admin.initialize_app(cred)                         # 初期設定
 db = firestore.client()                                     # クライアントインスタンスの作成
 
