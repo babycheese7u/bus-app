@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者画面</title>
+
+    <!-- Google Maps API（Flaskから渡されたキーを使用） -->
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap" async defer></script>
+
+    <style>
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+        .control-buttons {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ここに管理者用の操作ボタンやICカード情報表示なども追加可能 -->
+    <div id="bus-controls">
+        バスID: <input type="text" id="busIdInput" placeholder="例:1">
+        <button id="startBusBtn">追跡開始</button>
+        <button id="stopBUsBtn">追跡停止</button>
+    </div>
+
+    <div id="map"></div>
+
+    <!-- 共通の地図描画JS -->
+    <script src="{{ url_for('static', filename='js/map_common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin_map_realtime.js') }}"></script>
+
+    <!-- 通過バス停ログ表示 -->
+    <div id="busPassLogContainer">
+        <h3>通過バス停ログ</h3>
+        <ul id="busPassLog"></ul>
+    </div>
+</body>
+</html>

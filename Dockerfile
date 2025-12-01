@@ -1,24 +1,18 @@
-# ベースイメージ(slimは軽量化Ver.)
-FROM python:3.9-slim
+# ベースイメージ
+FROM python:3.12-slim
 
-# コンテナにappディレクトリが作成され、作業ディレクトリとなる
+# 作業ディレクトリ
 WORKDIR /app
 
-# pyscard をビルドするために必要なツールをインストール
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    swig \
-    pcscd \
-    libpcsclite-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# テキストファイルをコンテナにコピー
+# 依存関係コピー
 COPY requirements.txt .
-# テキストファイルの内容をインストール
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# カレントフォルダの中身をappフォルダにコピー
+# アプリのコピー
 COPY . .
 
-#Flaskを起動
-CMD ["python", "app.py"]
+# ポート指定
+ENV PORT 8080
+
+# Flask 実行
+CMD ["gunicorn", "-b", "0.0.0.0:8080", "app:app"]

@@ -1,112 +1,134 @@
 from flask import Flask, render_template, jsonify, request
-from ic_reader import read_card_uid     # UID読み取り関数のインポート
-# firebase関連のインポート
+from ic_reader import read_card_uid  # UID読み取り関数
 import firebase_admin
 from firebase_admin import credentials, firestore
-
 from dotenv import load_dotenv
 import os
 
-load_dotenv()           # .envの読み込み
+load_dotenv()
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
+
+# Secret Managerから秘密鍵を取得
+firebase_key_json = os.environ.get("FIREBASE_KEY")
+firebase_key_dict = json.loads(firebase_key_json)
 
 app = Flask(__name__)
 
-# Firebase接続（アプリ起動時一度のみ）
-cred = credentials.Certificate("C:\\Users\\pcwvs\\firebase_keys\\bus-app-service-key.json")    # 秘密鍵ファイルによる認証
-firebase_admin.initialize_app(cred)                         # 初期設定
-db = firestore.client()                                     # クライアントインスタンスの作成
+# Firebase 接続
+cred = credentials.Certificate(firebase_key_dict)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
-# 現在の区間をグローバル変数として保持
+# 現在の区間を保持
 current_section = 0
 
-# 乗降記録をDBに保存する関数
+
+# ------------------------------------------------------
+# 乗降記録を Firestore に保存
+# ------------------------------------------------------
 def save_usage(uid: str, status: str):
     if not uid:
         return False
 
-    # 保存内容
     record = {
-        "uid"      : uid,                                 # ICカードUID
-        "status"   : status,                              # 乗降者情報
-        "timestamp": firestore.SERVER_TIMESTAMP,          # タイムスタンプ
-        "section"  : current_section                      # 現在のセクション
+        "uid": uid,
+        "status": status,
+        "timestamp": firestore.SERVER_TIMESTAMP,
+        "section": current_section
     }
-
-    # コレクション"bus_usage"にrecordを保存
     db.collection("bus_usage").add(record)
-
     return True
 
-# ルートページ
+
+# ------------------------------------------------------
+# ページルーティング
+# ------------------------------------------------------
 @app.route("/")
 def index():
     return render_template("index.html")
 
-# 地図表示ページ
-@app.route("/map")
-def map_view():
-    return render_template("map.html", google_maps_key=GOOGLE_MAPS_API_KEY)
 
-# バス停情報の参照
+@app.route("/user")
+def user():
+    return render_template("user.html", google_maps_key=GOOGLE_MAPS_API_KEY)
+
+
+@app.route("/admin")
+def admin():
+    return render_template("admin.html", google_maps_key=GOOGLE_MAPS_API_KEY)
+
+
+# 管理者：ICカード読み取りページ
+@app.route("/admin/iccard")
+def admin_iccard():
+    return render_template("admin_iccard.html", section=current_section)
+
+
+# ------------------------------------------------------
+# Firestore からバス停を取得
+# ------------------------------------------------------
 @app.route("/get_stops")
 def get_stops():
-    # bus_stopsコレクション内の情報取得
     stops_ref = db.collection("bus_stops").stream()
-    # データ格納用の配列用意
     stops = []
 
     for doc in stops_ref:
-        data = doc.to_dict()        # Python用の辞書型変換
+        data = doc.to_dict()
         stops.append({
             "name": data.get("name"),
-            "lat" : data.get("lat"),
-            "lng" : data.get("lng")
+            "lat": data.get("lat"),
+            "lng": data.get("lng")
         })
     return jsonify(stops)
 
-# ICカードスキャンページ
-@app.route("/uid")
-def show_uid():
-    return render_template("uid.html")
 
-# ICカードのUID取得,保存
+# ------------------------------------------------------
+# 管理者：ICカードの UID 取得
+# ------------------------------------------------------
 @app.route("/get_uid", methods=["POST"])
 def get_uid():
-    data = request.get_json()               # uid.htmlからの情報取得
-    status = data.get("status", "乗車")     # 乗車情報を取得（デフォルト乗車）
+    data = request.get_json()
+    status = data.get("status", "乗車")
+
     uid = read_card_uid()
 
-    if uid:     # UID保存
+    if uid:
         save_usage(uid, status)
-    return jsonify({"uid": uid, "status": status})      # JSON形式のHTTPレスポンス送信
-    
+
+    return jsonify({"uid": uid, "status": status})
+
+
+# ------------------------------------------------------
+# 区間切り替え（管理者）
+# ------------------------------------------------------
 @app.route("/next_section", methods=["POST"])
 def next_section():
-    global current_section      # グローバル変数を変更するため定義
+    global current_section
 
-    # 現在の区間の乗車数を集計
+    # 現在の区間の乗車・降車数を集計
     docs = list(db.collection("bus_usage").where("section", "==", current_section).stream())
     geton = sum(1 for doc in docs if doc.to_dict().get("status") == "乗車")
-    docs = list(db.collection("bus_usage").where("section", "==", current_section).stream())
     getoff = sum(1 for doc in docs if doc.to_dict().get("status") == "降車")
 
-    # 集計結果をsectionコレクションに保存
+    # section コレクションに保存
     db.collection("section").document(str(current_section)).set({
-        "geton"    : geton,                             # 乗車人数
-        "getoff"   : getoff,                            # 降車人数
-        "timestamp": firestore.SERVER_TIMESTAMP         # タイムスタンプ
+        "geton": geton,
+        "getoff": getoff,
+        "timestamp": firestore.SERVER_TIMESTAMP
     })
 
-    #次の区間に進む
+    # 区間を進める
     current_section += 1
 
     return jsonify({
         "message": f"区間 {current_section} の乗車 {geton} 名, 降車 {getoff} 名を記録しました。",
-        "next_section": current_section+1
+        "next_section": current_section + 1
     })
 
-# 通過したバス停を保存
+
+# ------------------------------------------------------
+# バス停通過記録（GPS）
+# ------------------------------------------------------
 @app.route("/log_bus_pass", methods=["POST"])
 def log_bus_pass():
     data = request.get_json()
@@ -121,5 +143,61 @@ def log_bus_pass():
 
     return jsonify({"status": "error"}), 400
 
+# ------------------------------------------------------
+# バスの現在位置をサーバーに送信
+# ------------------------------------------------------
+@app.route("/update_bus_location", methods=["POST"])
+def update_bus_location():
+    data   = request.get_json()
+    bus_id = data.get("bus_id")
+    lat    = data.get("lat")
+    lng    = data.get("lng")
+
+    if bus_id and lat is not None and lng is not None:
+        # Firestoreに保存（またはサーバー側で保持）
+        db.collection("bus_locations").document(str(bus_id)).set({
+            "lat": lat,
+            "lng": lng,
+            "timestamp": firestore.SERVER_TIMESTAMP
+        })
+        return jsonify({"status": "ok"})
+    return jsonify({"status": "error"}), 400
+
+# ------------------------------------------------------
+# 現在の全バス位置を返す
+# ------------------------------------------------------
+@app.route("/get_all_bus_locations")
+def get_all_bus_locations():
+    docs = db.collection("bus_locations").stream()
+    buses = {}
+    for doc in docs:
+        data = doc.to_dict()
+        buses[doc.id] = {"lat": data.get("lat"), "lng": data.get("lng")}
+    return jsonify(buses)
+
+# ------------------------------------------------------
+# バス停通過ログ取得
+# ------------------------------------------------------
+@app.route("/get_bus_pass_log")
+def get_bus_pass_log():
+    # Firestoreから最新50件を取得（timestamp降順）
+    docs = db.collection("bus_pass_log").order_by("timestamp", direction=firestore.Query.DESCENDING).limit(50).stream()
+    
+    logs = []
+    for doc in docs:
+        data = doc.to_dict()
+        logs.append({
+            "stop": data.get("stop"),
+            "timestamp": data.get("timestamp")  # Firestore タイムスタンプ
+        })
+
+    # クライアントで表示しやすいよう降順を逆転（古い順）
+    logs.reverse()
+
+    return jsonify(logs)
+
+# ------------------------------------------------------
+# Flask 起動
+# ------------------------------------------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8080, debug=True)

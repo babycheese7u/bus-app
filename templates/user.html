@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ユーザー画面</title>
+
+    <!-- Google Maps API（Flaskから渡されたキーを使用） -->
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=initMap" async defer></script>
+
+    <style>
+        #map {
+            height: 80vh;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+
+    <!-- 共通の地図描画JS -->
+    <script src="{{ url_for('static', filename='js/map_common.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/user_map.js') }}"></script>
+
+    <!-- 通過バス停ログ表示 -->
+    <div id="busPassLogContainer">
+        <h3>通過バス停ログ</h3>
+        <ul id="busPassLog"></ul>
+    </div>
+</body>
+</html>

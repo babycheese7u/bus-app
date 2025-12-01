@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICカード乗降管理（管理者）</title>
+</head>
+<body>
+    <h1>区間 <span id="section">{{ section }}</span></h1>
+
+    <!-- 乗降切り替えスイッチ -->
+    <label>
+        <input type="checkbox" id="modeSwitch">
+        降車モードに切り替える
+    </label>
+    <div id="status-label">現在のモード: <span id="mode">乗車</span></div>
+
+    <button id="read-uid">ICカード読み取り</button>
+    <button id="next-section">次の区間へ</button>
+
+    <p id="uid">読み取り待ち...</p>
+    <p id="result"></p>
+
+    <!-- JavaScript -->
+    <script src="/static/js/admin_iccard.js"></script>
+</body>
+</html>
