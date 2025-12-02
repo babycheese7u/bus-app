@@ -8,7 +8,7 @@ let stops = [];
 // ----------------------------------------
 // 地図初期化（共通）
 // ----------------------------------------
-async function initMap() {
+window.initMap = async function() {
   const defaultLocation = { lat: 35.9946, lng: 138.1543 }; // 茅野駅
 
   map = new google.maps.Map(document.getElementById('map'), {
@@ -51,7 +51,7 @@ async function initMap() {
 
   // バス停通過ログ取得・表示
   fetchBusPassLog();
-}
+};
 
 // ----------------------------------------
 // バス停通過ログを取得して表示
@@ -71,4 +71,7 @@ async function fetchBusPassLog() {
   });
 }
 
-window.onload = initMap;
+// 地図初期化の最後で追跡機能も初期化
+if (window.initBusTrackingControls) {
+    window.initBusTrackingControls();
+}

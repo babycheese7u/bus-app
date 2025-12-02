@@ -1,0 +1,9 @@
+*.pyc
+__pycache__/
+*.p12
+*.zip
+*.tar
+*.mp4
+*.mov
+*.db
+.env

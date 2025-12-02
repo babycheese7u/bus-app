@@ -1,18 +1,29 @@
 from flask import Flask, render_template, jsonify, request
 from ic_reader import read_card_uid  # UID読み取り関数
 import firebase_admin
+import json
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 import os
 
+# ------------------------------------------------------
+# .envの取得
+# ------------------------------------------------------
+
+# .envを読み込む（ローカルのみ作用）
 load_dotenv()
+
 GOOGLE_MAPS_API_KEY = os.getenv("GOOGLE_MAPS_API_KEY")
 
-# Secret Managerから秘密鍵を取得
-firebase_key_json = os.environ.get("FIREBASE_KEY")
+# 環境変数を取得（Cloud RunならSecret Managerが入る）
+firebase_key_json = os.getenv("FIREBASE_KEY")
+
+if not firebase_key_json:
+    raise RuntimeError("FIREBASE_KEYが見つかりません")
+
 firebase_key_dict = json.loads(firebase_key_json)
 
-app = Flask(__name__)
+USE_ICCARD = os.getenv("USE_ICCARD", "false").lower() == "true"
 
 # Firebase 接続
 cred = credentials.Certificate(firebase_key_dict)
@@ -21,6 +32,9 @@ db = firestore.client()
 
 # 現在の区間を保持
 current_section = 0
+
+
+app = Flask(__name__)
 
 
 # ------------------------------------------------------
@@ -87,6 +101,9 @@ def get_stops():
 # ------------------------------------------------------
 @app.route("/get_uid", methods=["POST"])
 def get_uid():
+    if not USE_ICCARD:
+        return jsonify({"uid": None, "status": None})   # 無効化
+    
     data = request.get_json()
     status = data.get("status", "乗車")
 
@@ -200,4 +217,5 @@ def get_bus_pass_log():
 # Flask 起動
 # ------------------------------------------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True)
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
