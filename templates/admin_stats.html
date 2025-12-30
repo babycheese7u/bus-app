@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用状況分析</title>
+</head>
+<body>
+    <div>
+        <label for="">開始日 <input type="date" id="startDate"></label>
+        <label for="">終了日 <input type="date" id="endDate"></label>
+        <button id="loadStats">表示</button>
+    </div>
+
+    <!-- グラフの描画領域 -->
+    <canvas id="chartTime" width="400" height="200"></canvas>
+    <canvas id="chartStops" width="400" height="200"></canvas>
+    <canvas id="chartBuses" width="400" height="200"></canvas>
+
+    <!-- グラフ描画用のJavaScriptライブラリ -->
+     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+     <script src="/static/js/admin_stats.js"></script>
+</body>
+</html>

@@ -5,6 +5,8 @@ import json
 from firebase_admin import credentials, firestore
 from dotenv import load_dotenv
 import os
+from datetime import datetime
+from google.cloud.firestore_v1 import FieldFilter
 
 # ------------------------------------------------------
 # .envの取得
@@ -212,6 +214,50 @@ def get_bus_pass_log():
     logs.reverse()
 
     return jsonify(logs)
+
+# ------------------------------------------------------
+# 利用者データ表示
+# ------------------------------------------------------
+@app.route("/admin/stats")
+def admin_stats():
+    return render_template("admin_stats.html")
+
+# ------------------------------------------------------
+# 利用者データ取得
+# ------------------------------------------------------
+@app.route("/api/stats/usage")
+def api_stats_usage():
+    start = request.args.get("start")
+    end = request.args.get("end")
+
+    print("start:", start, "end:", end)
+
+    if not start or not end:
+        return jsonify({
+            "error": "start と end は必須です",
+            "example": "/api/stats/usage?start=2025-02-01&end=2025-02-07"
+        }), 400
+
+    start_dt = datetime.fromisoformat(start)
+    end_dt = datetime.fromisoformat(end)
+
+    query = (
+        db.collection("bus_usage")
+        .where(filter=FieldFilter("timestamp", ">=", start_dt))
+        .where(filter=FieldFilter("timestamp", "<=", end_dt))
+    )
+
+    result = []
+    for doc in query.stream():
+        d = doc.to_dict()
+        result.append({
+            "timestamp": d["timestamp"].isoformat(),
+            "bus_id": d["bus_id"],
+            "stop": d["stop"],
+            "count": d["count"]
+        })
+
+    return jsonify(result)
 
 # ------------------------------------------------------
 # Flask 起動
